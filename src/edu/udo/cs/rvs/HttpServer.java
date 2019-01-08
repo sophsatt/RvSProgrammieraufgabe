@@ -58,7 +58,9 @@ public class HttpServer
      */
     private int port;
     
-    private String ipAdresse = "127.0.0.1"
+    private String ipAdresse = "127.0.0.1";
+
+	private Socket mySocket;
 
     /**
      * Beispiel Dokumentation fuer diesen Konstruktor:
@@ -80,43 +82,29 @@ public class HttpServer
      */
     public void startServer()
     {
-    	throw new RuntimeException("Not yet implemented!");
-    }
-    
-    
-    public void response() {
-    	// muss aus Socket gelesen werden
-    	String method = "GET";
-    	//später null
-    	String fileRequested = "";
-    	
-    	try {
-    		// input stream aus socket lesen um Daten zu bekommen
-    		
-    		
-    	} catch (FileNotFoundException fnfe) {
+    	ServerSocket ssocket = null;
+		try {
+			ssocket = new ServerSocket();
 			try {
-				fileNotFound(out, dataOut, fileRequested);
-			} catch (IOException ioe) {
-				System.err.println("Error with file not found exception : " + ioe.getMessage());
+				ssocket.bind( new InetSocketAddress( port ) );
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
 			}
-			
-		} catch (IOException ioe) {
-			System.err.println("Server error : " + ioe);
-		} finally {
-			try {
-				in.close();
-				out.close();
-				dataOut.close();
-				connect.close(); // we close socket connection
-			} catch (Exception e) {
-				System.err.println("Error closing stream : " + e.getMessage());
-			} 
-			
-			if (verbose) {
-				System.out.println("Connection closed.\n");
-			}
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
-    	
+		
+		final ServerSocket finalSocket = ssocket;
+		while(true){
+			try {
+				MyThread thread = new MyThread(finalSocket.accept());
+				thread.start();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}  	
     }
 }
