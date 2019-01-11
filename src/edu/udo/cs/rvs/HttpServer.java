@@ -33,14 +33,11 @@ import java.util.zip.*;
  * Paketen benutzen. Achten Sie darauf, Ihren Code zu dokumentieren und moegliche
  * Ausnahmen (Exceptions) sinnvoll zu behandeln.
  *
- * @author Vorname Nachname, Matrikelnummer
- * @author Vorname Nachname, Matrikelnummer
- * @author Vorname Nachname, Matrikelnummer
+ * @author Lukas Bünger, 196891
+ * @author Vu Duc Tran, 207061
+ * @author Sophie Sattler, 180431
  */
-/**
- * @author 2908s
- *
- */
+
 /**
  * @author 2908s
  *
@@ -58,6 +55,10 @@ public class HttpServer
      */
     private int port;
     
+    
+    /**
+     * die IP-Adresse vom aufrufenden System
+     */
     private String ipAdresse = "127.0.0.1";
 
 	private Socket mySocket;
@@ -82,29 +83,50 @@ public class HttpServer
      */
     public void startServer()
     {
+    	boolean sent = false;
+    	System.out.println("in Methode startServer()");
     	ServerSocket ssocket = null;
 		try {
-			ssocket = new ServerSocket();
-			try {
-				ssocket.bind( new InetSocketAddress( port ) );
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+			ssocket = new ServerSocket(port);
+//			try {
+//				ssocket.bind( new InetSocketAddress( ipAdresse, port ) );
+//				System.out.println("ssocket gebunden");
+//			} catch (IOException e) {
+//				// TODO Auto-generated catch block
+//				//e.printStackTrace();
+//				System.out.println("error in ssocket.bin()");
+//			}
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		
 		final ServerSocket finalSocket = ssocket;
-		while(true){
+		while(!sent){
 			try {
-				MyThread thread = new MyThread(finalSocket.accept());
+				System.out.println("while-Schleife Thread");
+				MyThread thread = new MyThread(finalSocket.accept(), wwwroot, ipAdresse);
+				System.out.print("Thread Konstruktor aufgerufen, Socket acceptet");
 				thread.start();
+				System.out.println("Thread gestartet");
+				//später rausnehmen
+				sent = true;
+				
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-		}  	
+			
+		}
+    }
+    
+    /**
+     * Methode zur Bestimmung der aktuellen IP-Adresse
+     */
+    public void getServer() 
+    {
+    	//TODO implementieren
+    	
+    	this.ipAdresse = "http//" + "";
     }
 }
