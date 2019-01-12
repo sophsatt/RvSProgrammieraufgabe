@@ -17,7 +17,7 @@ public class Main
         int port;
         if (arguments.length == 0)
         {
-            port = 100;
+            port = 81;
             System.out.println("No Port Argument given. Defaulting to 80");
         }
         else if (arguments.length == 1)

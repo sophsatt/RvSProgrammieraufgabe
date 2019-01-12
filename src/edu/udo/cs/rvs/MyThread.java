@@ -98,7 +98,7 @@ public class MyThread extends Thread {
 				}
 				
 				
-				System.out.println("REQUEST BROWSER" + method + " "+ requestedFile + " "+ version);
+				System.out.println("REQUEST BROWSER " + method + " "+ requestedFile + " "+ version);
 				
 				int statusCode;
 				
@@ -121,10 +121,18 @@ public class MyThread extends Thread {
 				else if(!method.equals("GET") && !method.equals("POST") && !method.equals("HEAD")){
 					statusCode = 501;
 					sendResponse(out, reqFile, version, statusCode, url, head);
+					//GET oder POST Methode, kein conditional Get
 				} else if (method.equals("GET") || method.equals("POST") && !method.equals("HEAD") && conGet == false) {
-					
-					if (requestedFile.endsWith("/")) {
-						requestedFile += DEFAULT_FILE;
+					//kein Zugriff erlaubt auf Passwörter
+					if (requestedFile.endsWith("passwoerter.txt")) {
+						statusCode = 403;
+						sendResponse(out, null, version, statusCode, url, head);
+					}
+					//überprüfen ob im angegebenen Verzeichnis eine index-Datei liegt
+					else if (requestedFile.endsWith("/")) {
+						//index.???
+						requestedFile += "index.html";
+						System.out.println(requestedFile + " nach Index suchen");
 					}
 					//TODO Fälle: File nicht vorhanden, Directory angegeben, File vorhanden, keine Zugriffsrechte
 					reqFile = new File(wwwroot, requestedFile);
