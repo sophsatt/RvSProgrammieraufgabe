@@ -17,7 +17,7 @@ public class Main
         int port;
         if (arguments.length == 0)
         {
-            port = 81;
+            port = 80;
             System.out.println("No Port Argument given. Defaulting to 80");
         }
         else if (arguments.length == 1)
@@ -49,9 +49,7 @@ public class Main
             return;
         }
 
-        HttpServer server = new HttpServer(port);
-        System.out.println("HttpServer erstellt");
-        server.startServer();
-        System.out.println("HttpServer gestartet");
+        HttpServer server = new HttpServer(port);        
+        server.startServer();        
     }
 }
