@@ -74,13 +74,14 @@ public class MyThread extends Thread {
 				
 				try {
 					StringTokenizer frstParse = new StringTokenizer(frstLine);
-					method = frstParse.nextToken();
+					method = frstParse.nextToken().toUpperCase();
 				
 					requestedFile = frstParse.nextToken();
 				
 					version = frstParse.nextToken();
 				} catch(NullPointerException e){
 					//TODO exception
+					System.err.println(e.getMessage());
 				}
 				String sndLine;
 				Date modDate;
