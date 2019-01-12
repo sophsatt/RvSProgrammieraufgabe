@@ -112,7 +112,7 @@ public class HttpServer
 		while(!sent){
 			try {
 				System.out.println("while-Schleife Thread");
-				MyThread thread = new MyThread(finalSocket.accept(), wwwroot, ipAdresse);
+				MyThread thread = new MyThread(finalSocket.accept(), wwwroot, ssocket.getInetAddress().getHostAddress());
 				System.out.println("Thread Konstruktor aufgerufen, Socket acceptet");
 				thread.start();
 				System.out.println("Thread gestartet");
