@@ -59,9 +59,9 @@ public class HttpServer
     /**
      * die IP-Adresse vom aufrufenden System
      */
-    private String ipAdresse = "127.0.0.1";
+    private String ipAdresse;
 
-	private Socket mySocket;
+	private ServerSocket ssocket;
 
     /**
      * Beispiel Dokumentation fuer diesen Konstruktor:
@@ -84,10 +84,17 @@ public class HttpServer
     public void startServer()
     {
     	boolean sent = false;
-    	System.out.println("in Methode startServer()");
-    	ServerSocket ssocket = null;
-		try {
-			ssocket = new ServerSocket(port);
+    	System.out.println("in Methode startServer()" );
+    	try {
+			System.out.println("HttpServer erstellt");
+			//Die IP-Adresse wird von System gegeben.
+	    	if(ipAdresse != null && !ipAdresse.isEmpty()) {
+	    		this.ssocket = new ServerSocket(port, 1, InetAddress.getByName(ipAdresse));
+	    	}
+	    	else {
+	    		this.ssocket = new ServerSocket(port, 1, InetAddress.getLocalHost());
+	    	}
+	    	System.out.println("Server gestartet mit IP Adresse " + ssocket.getInetAddress().getHostAddress() + " und port " + port);
 //			try {
 //				ssocket.bind( new InetSocketAddress( ipAdresse, port ) );
 //				System.out.println("ssocket gebunden");
@@ -106,7 +113,7 @@ public class HttpServer
 			try {
 				System.out.println("while-Schleife Thread");
 				MyThread thread = new MyThread(finalSocket.accept(), wwwroot, ipAdresse);
-				System.out.print("Thread Konstruktor aufgerufen, Socket acceptet");
+				System.out.println("Thread Konstruktor aufgerufen, Socket acceptet");
 				thread.start();
 				System.out.println("Thread gestartet");
 				//später rausnehmen
@@ -119,14 +126,14 @@ public class HttpServer
 			
 		}
     }
-    
+    //Diese is nicht notwendig, Sie können ihr lösen
     /**
      * Methode zur Bestimmung der aktuellen IP-Adresse
-     */
+     
     public void getServer() 
     {
     	//TODO implementieren
     	
     	this.ipAdresse = "http//" + "";
-    }
+    }*/
 }
