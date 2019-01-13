@@ -1,0 +1,8 @@
+Lukas Bünger, 196891
+Vu Duc Tran, 207061
+Sophie Sattler, 180431
+
+Nach Starten des Servers wird die IP-Adresse in der Konsole ausgegeben.
+Über diese IP-Adresse und den angegebenen Port (oder Default Port 80) kann
+der Server nun über einen beliebigen Browser unter Angabe der IP-Adresse
+und des Ports geöffnet werden.

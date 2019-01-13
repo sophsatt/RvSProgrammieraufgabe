@@ -8,98 +8,153 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
 import java.net.Socket;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.NoSuchElementException;
 import java.util.StringTokenizer;
 
+/**
+ * In dieser Klasse werden die Anfragen vom Client verarbeitet und die Antworten vom Server erstellt und gesendet.
+ * Die angefragten Dateien werden eingelesen und zurückgegeben.
+ *
+ */
 public class MyThread extends Thread {
+	
+	/**
+	 * Variable, die zeigt ob Thread weiterlaufen soll
+	 */
 	private boolean terminate;
+	
+	/**
+	 * Socket über den Requests und Responses empfangen und geschickt werden
+	 */
 	private Socket socket;
+	
+	/**
+	 * Dieses Attribut gibt den Basis-Ordner fuer den HTTP-Server an.
+	 */
 	private File wwwroot = null;
+	
+	/**
+	 * IP-Adresse über die der Server erreicht werden kann
+	 */
 	private String ipAdresse;
-	static final String DEFAULT_FILE = "index.html";
+
+	/**
+	 * Thread wird initialisiert und Socket, Basis-Ordner und IP-Adresse werden gesetzt.
+	 * @param s der Socket zum Austausch
+	 * @param root der Basis-Ordner
+	 * @param ipAd die IP-Adresse
+	 */
 	
 	MyThread(Socket s, File root, String ipAd) {
 		this.terminate = false;
 		this.socket = s;
 		this.wwwroot = root;
-		this.ipAdresse = ipAd;
-		System.out.println("Konstruktor MyThread");
-	
+		this.ipAdresse = ipAd;	
 	}
 	
+	
+	/**
+	 * Methode zum Terminieren des Threads, schließt den Socket.
+	 */
 	public void terminate() {
-		System.out.println("in terminate MyThread");
 		terminate = true;
 		try {
 			socket.close();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
+			System.out.println("Fehler beim Schließen des Sockets.");
 		}
 	}
 	
+	/**
+	 * run-Methode, die die Requests des Clients verarbeitet und entscheidet wie geantwortet werden soll
+	 */
 	@Override
 	public void run() {
-		System.out.println("run() in MyThread()");
 		
+		BufferedReader in = null;
+		BufferedOutputStream out = null;
+		
+		// BufferedOut/InpustStream zum Socket wird versucht aufzubauen
+		try {
+			out = new BufferedOutputStream(socket.getOutputStream());
+			in = new BufferedReader(new InputStreamReader(socket.getInputStream(), "UTF8"));
+		
+		} catch (UnsupportedEncodingException e1) {
+			System.out.println("Fehler beim Aufbau des In/Outputstreams durch EncodingException." );
+			e1.printStackTrace();
+		
+		} catch (IOException e1) {
+			System.out.println("Fehler beim Aufbau des In/Outputstreams");
+			e1.printStackTrace();
+		}
+		
+		//läuft solange Thread lebt
 		while ( !terminate )
 		{
-			BufferedOutputStream out = null;
-			BufferedReader in = null;
+
 			try {
-				out = new BufferedOutputStream(socket.getOutputStream());
-				
-//				System.out.println("send response versuchen");
-//				sendResponse(out, null, "HTTP/1.0",200 , ipAdresse, false);
-//				System.out.println("send Response funktioniert");
-				
-				//String output = "Verbindung aufgebaut zu " + ipAdresse + "..." +" \r\n";
-				//out.write(output.getBytes());
-				//out.flush();
-				// eventuell output für Inhalt trennen?
-				// BufferedReader und BufferedOutputStream auf Socket einrichten
-				//zum Lesen des Requests und übergeben der Response
-				in = new BufferedReader(new InputStreamReader(socket.getInputStream(), "UTF8"));
-				
-				System.out.println("erstes try run MyThread");
 				
 				String frstLine = in.readLine();
-				String method = null;
-				String requestedFile = null;
-				String version = null;
+				
+				String method = "";
+				String requestedFile = "";
+				String version = "";
+				boolean conGet = false;
+				
+				/**
+				 * Der Browser schickt nach der ersten einfachen GET-Anfrage noch recht viele weitere Anfragen
+				 * bzw. einfach Anweisungen für den Client (Bspw. welche Sprachen er unterstützt hab ich gesehen)
+				 * Die sind teilweise auch nur 2 Wörter lang sodass der Tokenizer eine Exception wirft, diese Art
+				 * Anfragen können wir aber einfach ignorieren.
+				 */
+				
 				
 				try {
 					StringTokenizer frstParse = new StringTokenizer(frstLine);
-					method = frstParse.nextToken().toUpperCase();
-				
+
+					method = frstParse.nextToken();
 					requestedFile = frstParse.nextToken();
-				
 					version = frstParse.nextToken();
+					
 				} catch(NullPointerException e){
-					//TODO exception
-					System.err.println(e.getMessage());
+					//Browser schickt leere Anfragen
+					System.out.println("NullpointerException durch StringTokenizer");
+					continue;
 				}
+				
+				
+				/**
+				 * Eine Möglichkeit die überflüssigen Anfragen zu ignorieren, so wird immer "Not Implemented"
+				 * zurückgegeben, was ja an sich auch stimmt, und der Browser arbeitet trotzdem einfach weiter 
+				 */
+				catch(NoSuchElementException e)
+				{
+					System.out.println("NoSuchElementException");
+					version = "HTTP/1.0";			//Auch nicht wo wirklich richtig eigentlich
+					method = "Not Implemented";		//Eigentlich egal was man nimmt, Hauptsache es wird als falsch erkannt
+					requestedFile = null;
+					continue;
+				}
+				
 				String sndLine;
-				Date modDate;
-				if ((sndLine = in.readLine()) != null && sndLine.length() != 0 && sndLine.contains("If-Modified-Since")) {
+				
+				String modDate = "";
+				
+				//Anfrage ist conditional GET
+				if (method.equals("GET") && (sndLine = in.readLine()) != null && sndLine.length() != 0 && sndLine.contains("If-Modified-Since")) {
 					StringTokenizer sndParse = new StringTokenizer(sndLine);
-					System.out.println("Second Line" + sndLine);
 					sndParse.nextToken();
-					// TODO DateFormat anpassen! sind wahrscheinlich auch mehrere Token dann
-					try {
-						modDate = new SimpleDateFormat("dd/MM/yyyy").parse(sndParse.nextToken());
-					} catch (ParseException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
+					modDate = sndParse.nextToken();	
+					conGet = true;
 				}
 				
-				
-				System.out.println("REQUEST BROWSER " + method + " "+ requestedFile + " "+ version);
+				//Zum Testen
+				//System.out.println("REQUEST BROWSER " + method + " "+ requestedFile + " "+ version);
 				
 				int statusCode;
 				
@@ -108,56 +163,96 @@ public class MyThread extends Thread {
 				String url = ipAdresse + requestedFile;
 				
 				boolean head = false;
-				
-				boolean conGet = false;
-				//TODO überprüfen ob File vorhanden ist
+								
 				
 				// unterstützt nur 1.0 und 1.1 Anfragen
-				if(version.equals("HTTP/2.0")){
+				if(version.equals("HTTP/2.0") && !version.isEmpty()){
 					statusCode = 400;
 					sendResponse(out, reqFile, version, statusCode, url, head);
 				}
 				
 				//nur GET, HEAD und POST werden unterstützt
-				else if(!method.equals("GET") && !method.equals("POST") && !method.equals("HEAD")){
+				else if(!method.equals("GET") && !method.equals("POST") && !method.equals("HEAD") && !method.isEmpty()){
 					statusCode = 501;
 					sendResponse(out, reqFile, version, statusCode, url, head);
-					//GET oder POST Methode, kein conditional Get
-				} else if (method.equals("GET") || method.equals("POST") && !method.equals("HEAD") && conGet == false) {
+				} 
+				
+				//HEAD Anfrage, File wird nicht benötigt
+				else if(!method.equals("GET") && !method.equals("POST") && method.equals("HEAD") && !method.isEmpty()){
+					statusCode = 200;
+					sendResponse(out, reqFile, version, statusCode, url, head);
+				}
+					
+				//GET oder POST Methode, kein conditional Get
+				else if (method.equals("GET") || method.equals("POST") && !method.equals("HEAD") && !method.isEmpty()) {
+					
+					//wenn Conditional GET muss überprüft werden, ob was seit dem modDate modifiziert wurde
+					//hier noch nicht richtig implementiert, aber zur Vollständigkeit
+					if (conGet) {
+						if(modDate.equals(new Date().toString())) {
+							statusCode = 304;
+							sendResponse(out, null, version, statusCode, url, head);
+						}
+					}
+					
 					//kein Zugriff erlaubt auf Passwörter
-					if (requestedFile.endsWith("passwoerter.txt")) {
+					else if (requestedFile.endsWith("passwoerter.txt") && requestedFile != null) {
 						statusCode = 403;
 						sendResponse(out, null, version, statusCode, url, head);
 					}
-					//überprüfen ob im angegebenen Verzeichnis eine index-Datei liegt
-					else if (requestedFile.endsWith("/")) {
-						//index.???
-						requestedFile += "index.html";
-						System.out.println(requestedFile + " nach Index suchen");
-					}
-					//TODO Fälle: File nicht vorhanden, Directory angegeben, File vorhanden, keine Zugriffsrechte
-					reqFile = new File(wwwroot, requestedFile);
-					statusCode = 200;
-					sendResponse(out, reqFile, version, statusCode, url, head);
 					
+					//überprüfen ob, wenn nur Verzeichnis angegeben wird, eine Index-Datei vorhanden ist
+					else if (requestedFile.endsWith("/") && requestedFile != null) {
+						//index.??? hier festgelegt auf .html
+						requestedFile += "index.html";
+						
+						reqFile = new File(wwwroot, requestedFile);
+						
+						//wenn keine Index-Datei im angegebenen Verzeichnis vorhanden ist
+						if (!reqFile.exists()) {
+							statusCode = 204;
+							reqFile = null;
+							
+						} else {
+							statusCode = 200;
+						}
+						sendResponse(out, reqFile, version, statusCode, url, head);
+						
+					}
+					
+					//Normalfall, zunächst überprüfen ob Datei existiert
+					else {
+						
+						reqFile = new File(wwwroot, requestedFile);
+
+						//wenn Datei nicht existiert
+						if (!reqFile.exists()) {
+							statusCode = 404;
+							reqFile = null;
+						} else {
+							statusCode = 200;
+						}
+						sendResponse(out, reqFile, version, statusCode, url, head);
+					}
+				
 				}
-				
-				
-				
-				//Fallunterscheidung GET,POST,HEAD,....
-				
-				
-			} catch (FileNotFoundException e) {
-//				try {
-//					//fileNotFound(out, dataOut, fileRequested);
-//				} catch (IOException ioe) {
-//					System.err.println("Error with file not found exception : " + ioe.getMessage());
-//				}
 			
-			} catch (IOException ioe) {
-				System.err.println("Server error : " + ioe);
+			} catch (FileNotFoundException e) {	
+			
+			} catch (IOException e) {
+				System.out.println("Fehler beim In/Output: " + e);
+				
+				/**
+				 * Es ist (denke ich jedenfalls und mit der Überlegung funktioniert es ja ziemlich gut) ein Thread
+				 * nur für eine Übertragung zuständig, da (keine Ahnung wieso) bei Anfragen vom Browser der
+				 * InputStream nicht blockiert und nurnoch Exceptions wirft die die Konsole fluten und auch neue
+				 * Anfragen vom Browser nicht mehr erkennt. Jetzt schließt der Thread sobald in nichts mehr lesen
+				 * kann weil der Browser nichts mehr sendet.
+				 */
+				
+				
+				terminate();
 			}
-				// TODO in & out closen???
 		}
 	}
 
@@ -181,11 +276,8 @@ public class MyThread extends Thread {
 	 */
 	private void sendResponse(BufferedOutputStream out, File file, String version, int statusCode, String URL, boolean HEAD)
 	{
-		//BufferedOutputStream out = null;
 		try
 		{
-			System.out.println("sendResponse erstes try");
-			//out = new BufferedOutputStream(socket.getOutputStream());
 			//HashMap für die Reason-Phrases
 			HashMap<Integer, String> phrases = new HashMap<Integer, String>();
 			phrases.put(200, "OK");
@@ -199,14 +291,11 @@ public class MyThread extends Thread {
 			
 			//Status-Line
 			//Version als String übernommen
-			//String Response = "HTTP/" + version + " " + statusCode + " " + phrases.get(statusCode) + " \r\n";
 			String Response = version + " " + statusCode + " " + phrases.get(statusCode) + " \r\n";
 			
 			//General-Header
 			Response += "Server: RvSWebserver" + " \r\n";
-			Response += "MIME-version: 1.0" + " \n\r";
-			//General-Header
-			Response += "Date: " +  new Date().toString() + " \r\n";
+			Response += "Date: " +  new Date().toString() + "\r\n";
 			
 			//Response-Header
 			Response += "Location: " + URL + " \r\n";
@@ -214,15 +303,19 @@ public class MyThread extends Thread {
 			//Falls eine Datei gefunden wurde, füge Entity Header hinzu
 			if(statusCode==200 && file != null)
 			{
-				Response +=	  "Content-Length: " + file.length()        + " \r\n"
-							+ "Content-Type: "   + getContentType(file) + " \r\n"
-							+ "Last-Modified: "  + file.lastModified()  + " \r\n";
+				Response +=	  "Content-Type: "   + getContentType(file) + "\r\n"
+				            + "Content-Length: " + file.length()        + "\r\n" 
+							+ "Last-Modified: "  + file.lastModified()  + "\r\n";
 			}
-			Response += " \r\n";
-			System.out.println(Response);
+			Response += "\r\n";
+			
+			//Zum Testen
+			//System.out.println(Response);
+			
+			
 			//Sende Header
 			out.write(Response.getBytes());
-			System.out.println("nach out write response");
+
 			//Sende Datei (Falls gefunden und keine HEAD-Anfrage)
 			if(statusCode==200 && file != null && !HEAD)
 			{
@@ -255,21 +348,14 @@ public class MyThread extends Thread {
 				String endResponse = " \n";
 				out.write(endResponse.getBytes());
 				
-				/**
-				 * TODO: Output schließen oder mehrere Antworten pro Thread? 
-				 */ 
-				
 			}
 			
-			out.flush();
-			//out.close();
-			//terminate();
-				 
+			out.flush();				 
 			
 		}
 		catch(IOException e)
 		{
-			//TODO Was machen mit Exceptions?
+			System.err.println("Fehler beim Response schicken " + e);
 		}
 	}
 	
