@@ -117,9 +117,9 @@ public class MyThread extends Thread {
 				try {
 					StringTokenizer frstParse = new StringTokenizer(frstLine);
 
-					method = frstParse.nextToken();
-					requestedFile = frstParse.nextToken();
-					version = frstParse.nextToken();
+					method = frstParse.nextToken().toUpperCase();
+					requestedFile = frstParse.nextToken().toLowerCase();
+					version = frstParse.nextToken().toUpperCase();
 					
 				} catch(NullPointerException e){
 					//Browser schickt leere Anfragen
@@ -268,13 +268,13 @@ public class MyThread extends Thread {
 	 * @param file			Datei die gesendet werden soll
 	 * @param version		benutzte HTTP-Version
 	 * @param statusCode	Response-Status-Code
-	 * @param URL			URL der zu sendenden Datei
-	 * @param HEAD			Ob die Anfrage HEAD war oder nicht
+	 * @param url			url der zu sendenden Datei
+	 * @param head			Ob die Anfrage HEAD war oder nicht
 	 * 
 	 * TODO: Exceptions?
 	 * TODO: Pro Thread eine Anfrage oder mehr? Out schließen oder nicht?
 	 */
-	private void sendResponse(BufferedOutputStream out, File file, String version, int statusCode, String URL, boolean HEAD)
+	private void sendResponse(BufferedOutputStream out, File file, String version, int statusCode, String url, boolean head)
 	{
 		try
 		{
@@ -298,7 +298,7 @@ public class MyThread extends Thread {
 			Response += "Date: " +  new Date().toString() + "\r\n";
 			
 			//Response-Header
-			Response += "Location: " + URL + " \r\n";
+			Response += "Location: " + url + " \r\n";
 			
 			//Falls eine Datei gefunden wurde, füge Entity Header hinzu
 			if(statusCode==200 && file != null)
@@ -317,7 +317,7 @@ public class MyThread extends Thread {
 			out.write(Response.getBytes());
 
 			//Sende Datei (Falls gefunden und keine HEAD-Anfrage)
-			if(statusCode==200 && file != null && !HEAD)
+			if(statusCode==200 && file != null && !head)
 			{
 				FileInputStream in = new FileInputStream(file);
 				ByteArrayOutputStream arr = new ByteArrayOutputStream();

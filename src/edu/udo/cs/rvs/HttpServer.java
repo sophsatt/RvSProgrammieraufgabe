@@ -45,6 +45,8 @@ public class HttpServer
     public HttpServer(int port)
     {
         this.port = port;
+        //Zum Testen
+        //this.ipAdresse = "127.0.0.1";
     }
 
     /**
@@ -75,7 +77,7 @@ public class HttpServer
 		final ServerSocket finalSocket = ssocket;
 		while(true){
 			try {
-				MyThread thread = new MyThread(finalSocket.accept(), wwwroot, ipAdresse);
+				MyThread thread = new MyThread(finalSocket.accept(), wwwroot, ssocket.getInetAddress().getHostAddress());
 
 				thread.start();
 				
